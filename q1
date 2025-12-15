@@ -1,0 +1,111 @@
+def solve_truth_tables(statements):
+    """
+    計算給定命題邏輯語句的真值表。
+    假設變數為 P, Q, R。
+    """
+    
+    # 變數：P, Q, R
+    variables = ['P', 'Q', 'R']
+    
+    # 2^3 = 8 種組合
+    assignments = []
+    # 生成所有 FFF 到 TTT 的賦值組合
+    for i in range(2**len(variables)):
+        # 將 i 轉換為 3 位二進制數 (0=F, 1=T)
+        binary_str = bin(i)[2:].zfill(len(variables))
+        assignment = {var: (val == '1') for var, val in zip(variables, binary_str)}
+        assignments.append(assignment)
+
+    results = {}
+    
+    print("## 計算結果")
+    print("變數順序：P, Q, R (False=F, True=T)")
+    print("-" * 50)
+
+    for number, statement in statements.items():
+        truth_values = []
+        
+        # 遍歷所有賦值組合
+        for assign in assignments:
+            P, Q, R = assign['P'], assign['Q'], assign['R']
+            
+            # --- 根據命題語句計算真值 ---
+            
+            # 輔助函式：蘊含 (Implication) A -> B
+            def implies(A, B):
+                return (not A) or B # A -> B 等價於 not A or B
+            
+            # 輔助函式：等價 (Equivalence) A <-> B (雖然本題未使用)
+            # def equivalent(A, B):
+            #     return (A and B) or (not A and not B)
+
+            try:
+                if number == 1:
+                    # 1. [(P /\ Q) /\ ~(Q -> R)] -> (~P -> R)
+                    antecedent = (P and Q) and (not implies(Q, R))
+                    consequent = implies(not P, R)
+                    result = implies(antecedent, consequent)
+                    
+                elif number == 2:
+                    # 2. [(P \/ Q) /\ ~P] -> ~Q
+                    antecedent = (P or Q) and (not P)
+                    consequent = not Q
+                    result = implies(antecedent, consequent)
+                    
+                elif number == 3:
+                    # 3. [~(P /\ Q) /\ ~Q] -> ~P
+                    antecedent = (not (P and Q)) and (not Q)
+                    consequent = not P
+                    result = implies(antecedent, consequent)
+                    
+                elif number == 4:
+                    # 4. [~(P /\ Q) \/ R] -> [(~P \/ R) /\ (Q \/ ~R)]
+                    antecedent = (not (P and Q)) or R
+                    consequent_left = (not P) or R
+                    consequent_right = Q or (not R)
+                    consequent = consequent_left and consequent_right
+                    result = implies(antecedent, consequent)
+                    
+                elif number == 5:
+                    # 5. [P -> ~(Q /\ ~R)] /\ [ ~(P \/ Q) /\ (~P /\ R) -> (R /\ ~P)]
+                    # 複雜語句，拆成 A /\ B
+                    
+                    # 子句 A: P -> ~(Q /\ ~R)
+                    A_antecedent = P
+                    A_consequent = not (Q and (not R))
+                    A = implies(A_antecedent, A_consequent)
+                    
+                    # 子句 B: [ ~(P \/ Q) /\ (~P /\ R) ] -> (R /\ ~P)
+                    B_antecedent_left = not (P or Q)
+                    B_antecedent_right = (not P) and R
+                    B_antecedent = B_antecedent_left and B_antecedent_right
+                    B_consequent = R and (not P)
+                    B = implies(B_antecedent, B_consequent)
+
+                    # 最終結果：A 且 B
+                    result = A and B
+                
+                # 將 True/False 轉換為 T/F 字符
+                truth_values.append('T' if result else 'F')
+                
+            except Exception as e:
+                truth_values.append(f"Error: {e}")
+        
+        results[number] = "".join(truth_values)
+        print(f"Q{number}: {statement}")
+        print(f"真值序列 (8 行): {results[number]}")
+        print("-" * 50)
+        
+    return results
+
+# 您的輸入數據
+statements_data = {
+    1: "[(P /\ Q) /\ ~(Q -> R)] -> (~P -> R)",
+    2: "[(P \/ Q) /\ ~P] -> ~Q",
+    3: "[~(P /\ Q) /\ ~Q] -> ~P",
+    4: "[~(P /\ Q) \/ R] -> [(~P \/ R) /\ (Q \/ ~R)]",
+    5: "[P -> ~(Q /\ ~R)] /\ [ ~(P \/ Q) /\ (~P /\ R) -> (R /\ ~P)]"
+}
+
+# 執行計算
+final_results = solve_truth_tables(statements_data)
